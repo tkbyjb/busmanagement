@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.busmanagement.mapper.RoleMapper">
+    <select id="selectAllRoles" resultType="com.busmanagement.bean.Role">
+        select * from t_role
+    </select>
+
+    <select id="selects" resultType="com.busmanagement.bean.Role" resultMap="roleInfo" parameterType="java.util.Map">
+        select distinct t.roleId, t.roleName, t.roleNote, t_menu.*, t.deleteFlag
+        from (select distinct t_role.*,t_role_menu.menuId,t_role_menu.deleteFlag from t_role left join t_role_menu on t_role.roleId=t_role_menu.roleId ) t left join t_menu
+        on t.menuId=t_menu.menuId where 1=1
+        <if test="searchMap.roleName != null and searchMap.roleName != ''">
+            and roleName=#{searchMap.roleName}
+        </if>
+        <if test="searchMap.menuName != null and searchMap.menuName != ''">
+            and menuName=#{searchMap.menuName}
+        </if>
+    </select>
+    <resultMap id="roleInfo" type="com.busmanagement.bean.Role">
+        <id property="roleId" column="roleId"></id>
+        <result property="roleName" column="roleName"></result>
+        <result property="roleNote" column="roleNote"></result>
+        <collection property="menus" ofType="com.busmanagement.bean.Menu" autoMapping="true" >
+        </collection>
+    </resultMap>
+
+    <update id="updateRole" parameterType="com.busmanagement.bean.Role">
+        update t_role set roleName=#{role.roleName}, roleNote=#{role.roleNote} where roleId=#{role.roleId}
+    </update>
+
+    <insert id="insertRole" parameterType="com.busmanagement.bean.Role">
+        insert into t_role (roleName, roleNote) values (#{role.roleName}, #{role.roleNote})
+    </insert>
+
+    <delete id="deleteRoleMenu" parameterType="java.lang.Long">
+        delete from t_role_menu where roleId=#{roleId}
+    </delete>
+
+    <insert id="insertRoleMenu">
+        insert into t_role_menu (roleId, menuId, deleteFlag) values
+        <foreach collection="menus" item="menuId" index="index" separator=",">
+            (#{roleId}, #{menuId}, 0)
+        </foreach>
+    </insert>
+
+    <select id="selectRoleByRoleName" parameterType="java.lang.String" resultType="com.busmanagement.bean.Role">
+        select * from t_role where roleName=#{roleName}
+    </select>
+
+
+</mapper>

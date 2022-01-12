@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.busmanagement.mapper.CostAccraditationMapper">
+
+    <insert id="insert" parameterType="com.busmanagement.bean.CostAccraditation">
+        insert into t_cost_accraditation (busCode,approver,appTime,appState,expId,deleteFlag)
+        values
+        (#{obj.busCode},#{obj.approver},#{obj.appTime},#{obj.appState},#{obj.expId},#{obj.deleteFlag})
+    </insert>
+
+    <select id="selects" parameterType="java.util.Map" resultMap="info">
+        select t_cost_accraditation.*,t_bus_expenditure.amount,t_bus_expenditure.des, t_bus_expenditure.creator
+        from t_cost_accraditation left join t_bus_expenditure on t_cost_accraditation.expId=t_bus_expenditure.expId  where t_cost_accraditation.deleteFlag=0
+        <if test="searchMap.approver != null and searchMap.approver != ''">
+            and t_cost_accraditation.approver=#{searchMap.approver}
+        </if>
+        <if test="searchMap.appState != null">
+            and t_cost_accraditation.appState=#{searchMap.appState}
+        </if>
+        <if test="searchMap.startTime != null and searchMap.endTime != null and searchMap.startTime != '' and searchMap.endTime != ''">
+            and t_cost_accraditation.appTime between #{searchMap.startTime} and #{searchMap.endTime}
+        </if>
+        <if test="searchMap.orderBy != null and searchMap.upDown != null">
+            order by
+            <if test="searchMap.orderBy == 'appTime'">
+                t_cost_accraditation.appTime
+            </if>
+            <if test="searchMap.upDown == 'desc'">
+                desc
+            </if>
+            <if test="searchMap.upDown == 'asc'">
+                asc
+            </if>
+        </if>
+    </select>
+    <resultMap id="info" type="com.busmanagement.bean.CostAccraditation" autoMapping="true">
+        <id property="appId" column="appId"/>
+        <association property="busExpenditure" javaType="com.busmanagement.bean.BusExpenditure">
+            <result property="amount" column="amount"/>
+            <result property="des" column="des"/>
+            <result property="creator" column="creator"/>
+        </association>
+    </resultMap>
+</mapper>

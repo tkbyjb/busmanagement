@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.busmanagement.mapper.MenuMapper">
+
+<!--    <select id="selectMenuByUserName" resultMap="menuInfo">-->
+<!--        select-->
+<!--            level1.menuId menuId1,  level1.menuName menuName1, level1.url url1, level1.icon icon1,level1.target target1,-->
+<!--            menus.menuId menuId2,menus.menuName menuName2,menus.url url2,  menus.icon icon2, menus.target target2-->
+<!--        from-->
+<!--            (select t_menu.*-->
+<!--             from t_user,t_role_menu,t_menu-->
+<!--             where t_user.roleId = t_role_menu.roleId and t_role_menu.menuId = t_menu.menuId-->
+<!--               and t_user.userName = #{userName}) menus,-->
+<!--            (select * from t_menu where parent is null) level1-->
+<!--        where level1.menuId = menus.parent-->
+<!--    </select>-->
+<!--    <resultMap id="menuInfo" type="com.busmanagement.bean.Menu">-->
+<!--        <id property="menuId" column="menuId1"/>-->
+<!--        <result property="menuName" column="menuName1"/>-->
+<!--        <result property="url" column="url1"/>-->
+<!--        <result property="icon" column="icon1"/>-->
+<!--        <result property="target" column="target1"/>-->
+<!--        <collection property="menuChilds" ofType="com.busmanagement.bean.Menu">-->
+<!--            <id property="menuId" column="menuId2"/>-->
+<!--            <result property="menuName" column="menuName2"/>-->
+<!--            <result property="url" column="url2"/>-->
+<!--            <result property="icon" column="icon2"/>-->
+<!--            <result property="target" column="target2"/>-->
+<!--        </collection>-->
+<!--    </resultMap>-->
+
+    <select id="selectMenu" resultType="com.busmanagement.bean.Menu">
+        select t_menu.* from t_menu, t_role_menu
+        where t_menu.menuId=t_role_menu.menuId
+          and t_menu.parent=#{parent}
+          and t_role_menu.roleId=#{roleId}
+    </select>
+
+    <select id="selectMenus" resultType="com.busmanagement.bean.Menu">
+        select * from t_menu
+        where  parent=#{parent}
+    </select>
+</mapper>

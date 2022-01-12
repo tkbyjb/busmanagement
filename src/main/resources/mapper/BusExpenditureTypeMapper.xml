@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.busmanagement.mapper.BusExpenditureTypeMapper">
+    <select id="selects" resultType="com.busmanagement.bean.BusExpenditureType">
+        select * from t_bus_expenditure_type where deleteFlag=0
+    </select>
+
+    <update id="deletes" parameterType="java.util.ArrayList" flushCache="true">
+        update t_bus_expenditure_type set deleteFlag=1 where typeId in
+        <foreach collection="typeIds" item="id" index="index" separator="," open="(" close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <update id="update" parameterType="com.busmanagement.bean.BusExpenditureType" flushCache="true">
+        update t_bus_expenditure_type set typeName=#{type.typeName}, typeNote=#{type.typeNote} where typeId=#{type.typeId}
+    </update>
+
+    <insert id="insert" parameterType="com.busmanagement.bean.BusExpenditureType">
+        insert into t_bus_expenditure_type  (typeName,typeNote, deleteFlag) values (#{type.typeName}, #{type.typeNote}, #{type.deleteFlag})
+    </insert>
+
+    <select id="selectByTypeName" parameterType="java.lang.String" resultType="com.busmanagement.bean.BusExpenditureType">
+        select * from t_bus_expenditure_type where typeName=#{typeName}
+    </select>
+
+</mapper>

@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.busmanagement.mapper.UserMapper">
+    <select id="selects" resultMap="userInfo" parameterType="java.util.Map">
+        select distinct t.*,t_user.userName creatorUserName
+        from
+        (select t_user.*,t_role.roleName,t_role.roleNote from t_user left join t_role on t_user.roleId=t_role.roleId  where t_user.deleteFlag=0) t
+        left join t_user on t.creator=t_user.userId where t.deleteFlag=0
+        <if test="searchMap.userId != null and searchMap.userId != 0 and searchMap.userId != ''">
+            and t.userId=#{searchMap.userId}
+        </if>
+<!--        <if test="searchMap.roleId != null and searchMap.roleId != 0 and searchMap.roleId != ''">-->
+<!--            and t.roleId=#{searchMap.roleId}-->
+<!--        </if>-->
+<!--        <choose>-->
+<!--            &lt;!&ndash;用户名模糊匹配&ndash;&gt;-->
+<!--            <when test="searchMap.userName != null and searchMap.userName != '' and searchMap.userNameFullMatch == null">-->
+<!--                and t_user.userName like concat('%', #{searchMap.userName}, '%')-->
+<!--            </when>-->
+<!--            &lt;!&ndash;用户名完全匹配&ndash;&gt;-->
+<!--            <when test="searchMap.userNameFullMatch != null">-->
+<!--                and t_user.userName=#{searchMap.userName}-->
+<!--            </when>-->
+<!--        </choose>-->
+        <if test="searchMap.userName != null and searchMap.userName != ''">
+            and t.userName like concat('%', #{searchMap.userName}, '%')
+        </if>
+        <if test="searchMap.userPassword != null and searchMap.userPassword != ''">
+            and t.userPassword=#{searchMap.userPassword}
+        </if>
+        <if test="searchMap.realName != null and searchMap.realName != ''">
+            and t.realName like concat('%', #{searchMap.realName}, '%')
+        </if>
+        <if test="searchMap.sex != null and searchMap.sex != ''">
+            and t.sex=#{searchMap.sex}
+        </if>
+        <if test="searchMap.idCard != null and searchMap.idCard != ''">
+            and t.idCard=#{searchMap.idCard}
+        </if>
+        <if test="searchMap.birth != null and searchMap.birth != ''">
+            and t.birth=#{searchMap.birth}
+        </if>
+        <if test="searchMap.age != null and searchMap.age != 0 and searchMap.age != ''">
+            and t.age=#{searchMap.age}
+        </if>
+        <if test="searchMap.tel != null and searchMap.tel != ''">
+            and t.tel like concat('%', #{searchMap.tel}, '%')
+        </if>
+        <if test="searchMap.creator != null and searchMap.creator != 0 and searchMap.creator != ''">
+            and t.creator=#{searchMap.creator}
+        </if>
+        <if test="searchMap.createTime != null and searchMap.createTime != ''">
+            and t.createTime=#{searchMap.createTime}
+        </if>
+        <if test="searchMap.updateTime != null and searchMap.updateTime != ''">
+            and t.updateTime=#{searchMap.updateTime}
+        </if>
+        <!--***********************自定义查询字段查询*****************************-->
+        <!--创建时间段-->
+        <if test="searchMap.startCreateTime != null and searchMap.endCreateTime != null and searchMap.startCreateTime != '' and searchMap.endCreateTime != ''">
+            and t.createTime between #{searchMap.startCreateTime} and #{searchMap.endCreateTime}
+        </if>
+        <!--未分配角色-->
+        <if test="searchMap.roleId != null and (searchMap.roleId == -1 or searchMap.roleId == '-1')">
+            and (t.roleId is null or t.roleId=-1)
+        </if>
+        <if test="searchMap.roleId != null and searchMap.roleId != -1 and searchMap.roleId != '-1'">
+            and t.roleId=#{searchMap.roleId}
+        </if>
+        <if test="searchMap.roleName != null and searchMap.roleName != '' and searchMap.roleName != '无权限'">
+            and t.roleName=#{searchMap.roleName}
+        </if>
+        <if test="searchMap.roleName != null and searchMap.roleName == '无权限'">
+            and (t.roleId is null or t.roleId=-1)
+        </if>
+        <if test="searchMap.creatorUserName != null and searchMap.creatorUserName != ''">
+            and t_user.userName like concat('%', #{searchMap.creatorUserName}, '%')
+        </if>
+        <if test="searchMap.orderBy != null and searchMap.upDown != null">
+            order by
+            <if test="searchMap.orderBy == 'createTime'">
+                t.createtime
+            </if>
+            <if test="searchMap.orderBy == 'updateTime'">
+                t.updateTime
+            </if>
+            <if test="searchMap.upDown == 'desc'">
+                desc
+            </if>
+            <if test="searchMap.upDown == 'asc'">
+                asc
+            </if>
+        </if>
+    </select>
+    <resultMap id="userInfo" type="com.busmanagement.bean.User" autoMapping="true">
+        <id property="userId" column="userId"/>
+        <result property="roleId" column="roleId"/>
+        <result property="creator" column="creator"/>
+        <association property="role" javaType="com.busmanagement.bean.Role">
+            <id property="roleId" column="roleId"/>
+            <result property="roleName" column="roleName"/>
+            <result property="roleNote" column="roleNote"/>
+        </association>
+        <association property="creatorUser" javaType="com.busmanagement.bean.User">
+            <id property="userId" column="creator"/>
+            <result property="userName" column="creatorUserName"/>
+        </association>
+    </resultMap>
+
+    <update id="deletes" parameterType="java.lang.Long" flushCache="true">
+        update t_user set deleteFlag=1 where userId in
+        <foreach collection="userIds" item="id" index="index" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <insert id="insert" parameterType="com.busmanagement.bean.User" flushCache="true">
+        insert into t_user
+        (roleId,  userName ,  userPassword ,  realName ,  sex ,  idCard ,  birth ,  age ,  tel ,  createTime ,  updateTime ,  creator ,  deleteFlag )
+        values (
+             <if test="user.roleId != 0">
+                 #{user.roleId},
+             </if>
+            <if test="user.roleId == 0">
+                null,
+            </if>
+        #{user.userName}, #{user.userPassword}, #{user.realName}, #{user.sex}, #{user.idCard}, #{user.birth}, #{user.age}, #{user.tel}, #{user.createTime}, #{user.updateTime}, #{user.creator},#{user.deleteFlag})
+    </insert>
+
+    <update id="update" parameterType="com.busmanagement.bean.User" flushCache="true">
+        update t_user set
+            userName=#{user.userName},roleId=#{user.roleId},userPassword=#{user.userPassword},realName=#{user.realName},sex=#{user.sex},idCard=#{user.idCard},birth=#{user.birth},age=#{user.age},tel=#{user.tel},updateTime=#{user.updateTime}
+        where userId=#{user.userId}
+    </update>
+
+    <select id="selectByUserName" parameterType="java.lang.String" resultType="com.busmanagement.bean.User">
+        select * from t_user where userName=#{userName} and deleteFlag=0
+    </select>
+
+    <select id="selectByUserId" parameterType="java.lang.Long" resultType="com.busmanagement.bean.User">
+        select * from t_user where userId=#{userId} and deleteFlag=0
+    </select>
+
+    <select id="selectByUserNameAndPassword" parameterType="java.lang.String" resultMap="loginInfo">
+        select t_user.*,t_role.roleName from t_user join t_role on t_user.roleId=t_role.roleId where t_user.userName=#{userName}  and t_user.userPassword=#{password} and t_user.deleteFlag=0
+    </select>
+    <resultMap id="loginInfo" type="com.busmanagement.bean.User" autoMapping="true">
+        <id property="userId" column="userId"/>
+        <result property="roleId" column="roleId"/>
+        <association property="role" javaType="com.busmanagement.bean.Role">
+            <id property="roleId" column="roleId"/>
+            <result property="roleName" column="roleName"/>
+        </association>
+    </resultMap>
+
+    <update id="updateUserRole" >
+        update t_user set roleId=#{roleId} where userId in
+        <foreach collection="userIds" item="userId" index="index" open="(" separator="," close=")">
+            #{userId}
+        </foreach>
+    </update>
+</mapper>

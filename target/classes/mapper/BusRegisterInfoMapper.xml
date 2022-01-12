@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.busmanagement.mapper.BusRegisterInfoMapper">
+    <select id="selects" parameterType="java.util.Map" resultMap="busRegisterInfo">
+        select t.*, t_user.userName creatorUserName
+        from (select t_bus_register_info.*,t_user.userName recepientUserName from t_bus_register_info left join t_user on t_bus_register_info.recepient=t_user.userId) t
+                 left join t_user on t.creator=t_user.userId where t.deleteFlag=0
+        <if test="searchMap.busCode != null and searchMap.busCode != ''">
+            and t.busCode like concat('%', #{searchMap.busCode}, '%')
+        </if>
+        <if test="searchMap.recepientUserName != null and searchMap.recepientUserName != ''">
+            and t.recepientUserName like concat('%', #{searchMap.recepientUserName}, '%')
+        </if>
+        <if test="searchMap.startPlace != null and searchMap.startPlace != ''">
+            and t.startPlace like concat('%', #{searchMap.startPlace}, '%')
+        </if>
+        <if test="searchMap.endPlace != null and searchMap.endPlace != ''">
+            and t.endPlace like concat('%', #{searchMap.endPlace}, '%')
+        </if>
+        <if test="searchMap.creatorUserName != null and searchMap.creatorUserName != ''">
+            and t_user.userName like concat('%', #{searchMap.creatorUserName}, '%')
+        </if>
+        <if test="searchMap.startUseTime != null and searchMap.endUseTime != null and searchMap.startUseTime != '' and searchMap.endUseTime != ''">
+            and t.useTime between #{searchMap.startUseTime} and date_add(#{searchMap.endUseTime}, interval 1 day)
+        </if>
+        <if test="searchMap.orderBy != null and searchMap.upDown != null">
+            order by
+            <if test="searchMap.orderBy == 'createTime'">
+                t.createtime
+            </if>
+            <if test="searchMap.orderBy == 'updateTime'">
+                t.updateTime
+            </if>
+            <if test="searchMap.orderBy == 'useTime'">
+                t.useTime
+            </if>
+            <if test="searchMap.upDown == 'desc'">
+                desc
+            </if>
+            <if test="searchMap.upDown == 'asc'">
+                asc
+            </if>
+        </if>
+    </select>
+    <resultMap id="busRegisterInfo" type="com.busmanagement.bean.BusRegisterInfo" autoMapping="true">
+        <id property="regId" column="regId"/>
+        <result property="recepient" column="recepient"/>
+        <result property="creator" column="creator"/>
+        <association property="recepientUser" javaType="com.busmanagement.bean.User">
+            <id property="userId" column="recepient"/>
+            <result property="userName" column="recepientUserName"/>
+        </association>
+        <association property="creatorUser" javaType="com.busmanagement.bean.User">
+            <id property="userId" column="creator"/>
+            <result property="userName" column="creatorUserName"/>
+        </association>
+    </resultMap>
+
+    <select id="selectStartPlaces" resultType="java.lang.String">
+        select distinct startPlace from t_bus_register_info where deleteFlag=0
+    </select>
+
+    <select id="selectEndPlaces" resultType="java.lang.String">
+        select distinct endPlace from t_bus_register_info where deleteFlag=0
+    </select>
+
+    <select id="selectBusCodes" resultType="java.lang.String">
+        select distinct busCode from t_bus_register_info where deleteFlag=0
+    </select>
+
+    <select id="selectRecepientUserNames" resultType="java.lang.String">
+        select distinct t_user.userName from t_bus_register_info join t_user on t_bus_register_info.recepient=t_user.userId where t_bus_register_info.deleteFlag=0
+    </select>
+
+    <select id="selectCreatorUserNames" resultType="java.lang.String">
+        select distinct t_user.userName from t_bus_register_info join t_user on t_bus_register_info.creator=t_user.userId where t_bus_register_info.deleteFlag=0
+    </select>
+
+    <update id="update" parameterType="com.busmanagement.bean.BusRegisterInfo" flushCache="true">
+        update t_bus_register_info set
+        busCode=#{busRegisterInfo.busCode},
+        recepient=#{busRegisterInfo.recepient},
+        startPlace=#{busRegisterInfo.startPlace},
+        endPlace= #{busRegisterInfo.endPlace},
+        startOdometer=#{busRegisterInfo.startOdometer},
+        endOdometer=#{busRegisterInfo.endOdometer},
+        useTime=#{busRegisterInfo.useTime},
+        useReason=#{busRegisterInfo.useReason},
+        createTime= #{busRegisterInfo.createTime},
+        updateTime=#{busRegisterInfo.updateTime},
+        creator=#{busRegisterInfo.creator}
+        where regId=#{busRegisterInfo.regId}
+    </update>
+
+    <update id="deletes" parameterType="java.util.ArrayList" flushCache="true">
+        update t_bus_register_info set deleteFlag=1 where regId in
+        <foreach collection="regIds" item="id" index="index" separator="," open="(" close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <insert id="insert" parameterType="com.busmanagement.bean.BusRegisterInfo" flushCache="true">
+        insert into t_bus_register_info
+            (busCode,recepient,startPlace,endPlace,startOdometer,endOdometer,useTime,useReason,createTime,updateTime,creator,deleteFlag)
+            values
+            (#{busRegisterInfo.busCode}, #{busRegisterInfo.recepient}, #{busRegisterInfo.startPlace}, #{busRegisterInfo.endPlace}, #{busRegisterInfo.startOdometer}, #{busRegisterInfo.endOdometer}, #{busRegisterInfo.useTime}, #{busRegisterInfo.useReason}, #{busRegisterInfo.createTime}, #{busRegisterInfo.updateTime}, #{busRegisterInfo.creator},#{busRegisterInfo.deleteFlag} )
+    </insert>
+
+    <select id="getIntervalInfo" parameterType="java.util.Map" resultType="java.util.Map">
+        select date(useTime) date, count(*) totalNum, sum(startOdometer+endOdometer) totalOdometer
+        from t_bus_register_info
+        where deleteFlag=0
+        <if test="map.startTime != null and map.endTime != null and map.startTime != ''  and map.endTime != ''">
+            and  date(useTime) between #{map.startTime} and date_add( #{map.endTime}, interval 1 day)
+        </if>
+        <if test="map.recepient != null and map.recepient != '' and map.recepient != 0">
+            and recepient=#{map.recepient}
+        </if>
+        <if test="map.busCode != null and map.busCode != ''">
+            and busCode=#{map.busCode}
+        </if>
+        <if test="map.startPlace != null and  map.startPlace != ''">
+            and startPlace=#{map.startPlace}
+        </if>
+        <if test="map.endPlace != null and  map.endPlace != ''">
+            and endPlace=#{map.endPlace}
+        </if>
+        group by  date(useTime)
+        order by date
+    </select>
+
+</mapper>

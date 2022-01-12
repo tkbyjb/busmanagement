@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.busmanagement.mapper.BusExpenditureMapper">
+    <select id="gets" parameterType="java.util.Map" resultMap="expendInfo">
+        select t.*,t_user.userName creatorUserName
+        from
+            (select t.*,t_user.userName approverUserName
+             from
+                 (select t_bus_expenditure.*,t_bus_expenditure_type.typeName,t_bus_expenditure_type.typeNote
+                  from t_bus_expenditure left join t_bus_expenditure_type on t_bus_expenditure.typeId=t_bus_expenditure_type.typeId)
+                     t left join t_user on t.approver=t_user.userId) t left join t_user on t.creator=t_user.userId
+        where t.deleteFlag=0
+        <if test="searchMap.expId != null and searchMap.expId != 0">
+            and t.expId=#{searchMap.expId}
+        </if>
+        <if test="searchMap.busCode != null and searchMap.busCode != ''">
+            and t.busCode like concat('%',#{searchMap.busCode},'%')
+        </if>
+        <if test="searchMap.invoiceCode != null and searchMap.invoiceCode != ''">
+            and t.invoiceCode=#{searchMap.invoiceCode}
+        </if>
+        <if test="searchMap.typeId != null and searchMap.typeId != 0">
+            and t.typeId=#{searchMap.typeId}
+        </if>
+        <if test="searchMap.amount != null and searchMap.amount != 0">
+            and t.amount=#{searchMap.amount}
+        </if>
+        <if test="searchMap.state != null ">
+            and t.state=#{searchMap.state}
+        </if>
+        <if test="searchMap.approver != null and searchMap.approver != 0">
+            and t.approver=#{searchMap.approver}
+        </if>
+        <if test="searchMap.des != null and searchMap.des != ''">
+            and t.des like concat('%',#{searchMap.des},'%')
+        </if>
+        <if test="searchMap.createTime != null and searchMap.createTime != ''">
+            and t.createTime=#{searchMap.createTime}
+        </if>
+        <if test="searchMap.updateTime != null and searchMap.updateTime != ''">
+            and t.updateTime=#{searchMap.updateTime}
+        </if>
+        <if test="searchMap.creator != null and searchMap.creator != 0">
+            and t.creator=#{searchMap.creator}
+        </if>
+        <!--自定义查询参数-->
+        <if test="searchMap.typeName != null and searchMap.typeName != ''">
+            and t.typeName like concat('%',#{searchMap.typeName},'%')
+        </if>
+        <if test="searchMap.approverUserName != null and searchMap.approverUserName != ''">
+            and t.approverUserName like concat('%',#{searchMap.approverUserName},'%')
+        </if>
+        <if test="searchMap.creatorUserName != null and searchMap.creatorUserName != ''">
+            and t_user.userName like concat('%',#{searchMap.creatorUserName},'%')
+        </if>
+        <!--创建时间段-->
+        <if test="searchMap.startCreateTime != null and searchMap.endCreateTime != null and searchMap.startCreateTime != '' and searchMap.endCreateTime != ''">
+            and t.createTime between #{searchMap.startCreateTime} and date_add(#{searchMap.endCreateTime}, interval 1 day)
+        </if>
+        <if test="searchMap.orderBy != null and searchMap.upDown != null">
+            order by
+            <if test="searchMap.orderBy == 'createTime'">
+                t.createtime
+            </if>
+            <if test="searchMap.orderBy == 'updateTime'">
+                t.updateTime
+            </if>
+            <if test="searchMap.upDown == 'desc'">
+                desc
+            </if>
+            <if test="searchMap.upDown == 'asc'">
+                asc
+            </if>
+        </if>
+    </select>
+    <resultMap id="expendInfo" type="com.busmanagement.bean.BusExpenditure" autoMapping="true">
+        <id property="expId" column="expId"/>
+        <result property="typeId" column="typeId"/>
+        <result property="approver" column="approver"/>
+        <result property="creator" column="creator"/>
+        <association property="approverUser" javaType="com.busmanagement.bean.User">
+            <id property="userId" column="approver"/>
+            <result property="userName" column="approverUserName"/>
+        </association>
+        <association property="creatorUser" javaType="com.busmanagement.bean.User">
+            <id property="userId" column="creator"/>
+            <result property="userName" column="creatorUserName"/>
+        </association>
+        <association property="expendType" javaType="com.busmanagement.bean.BusExpenditureType">
+            <id property="typeId" column="typeId"/>
+            <result property="typeName" column="typeName"/>
+            <result property="typeNote" column="typeNote"/>
+        </association>
+    </resultMap>
+
+    <update id="deletes" parameterType="java.util.ArrayList" flushCache="true">
+        update t_bus_expenditure set deleteFlag=1 where expId in
+        <foreach collection="ids" item="id" index="index" separator="," open="(" close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <update id="update" parameterType="com.busmanagement.bean.BusExpenditure" flushCache="true">
+        update t_bus_expenditure set
+            busCode=#{expend.busCode},
+            invoiceCode=#{expend.invoiceCode},
+            typeId=#{expend.typeId},amount=#{expend.amount},state=#{expend.state},approver=#{expend.approver},
+            des=#{expend.des},createTime=#{expend.createTime},updateTime=#{expend.updateTime},
+            creator=#{expend.creator},deleteFlag=#{expend.deleteFlag}
+        where expId=#{expend.expId}
+    </update>
+
+    <insert id="insert" parameterType="com.busmanagement.bean.BusExpenditure">
+        insert into t_bus_expenditure
+            (busCode,invoiceCode,typeId,amount,state,des,createTime,updateTime,creator,deleteFlag)
+            values
+        (#{expend.busCode},#{expend.invoiceCode},#{expend.typeId},#{expend.amount},#{expend.state},
+         #{expend.des},#{expend.createTime},#{expend.updateTime},#{expend.creator},#{expend.deleteFlag})
+    </insert>
+
+    <select id="getApproverUserNames" resultType="java.lang.String">
+        select distinct t_user.userName from t_bus_expenditure left join t_user on t_bus_expenditure.approver=t_user.userId where t_bus_expenditure.deleteFlag=0
+    </select>
+
+    <select id="getCreatorUserNames" resultType="java.lang.String">
+        select distinct t_user.userName from t_bus_expenditure left join t_user on t_bus_expenditure.creator=t_user.userId where t_bus_expenditure.deleteFlag=0
+    </select>
+
+
+    <update id="updateState" >
+        update t_bus_expenditure set state=#{state}, approver=#{approver} where expId in
+        <foreach collection="expIds" item="s" index="index" open="(" separator="," close=")">
+            #{s}
+        </foreach>
+    </update>
+
+    <select id="getBusCodes" resultType="java.lang.String">
+        select distinct busCode from t_bus_expenditure where deleteFlag=0
+    </select>
+
+    <select id="getIntervalInfo" parameterType="java.util.Map" resultType="java.util.Map">
+        select date(createTime) date, count(*) totalNum, sum(amount) totalAmount
+        from t_bus_expenditure
+        where deleteFlag=0
+        <if test="map.startTime != null and map.endTime != null and map.startTime != ''  and map.endTime != ''">
+            and  date(createTime) between #{map.startTime} and date_add( #{map.endTime}, interval 1 day)
+        </if>
+        <if test="map.typeId != null and map.typeId != ''">
+            and typeId=#{map.typeId}
+        </if>
+        <if test="map.busCode != null and map.busCode != ''">
+            and busCode=#{map.busCode}
+        </if>
+        group by  date(createTime)
+        order by date(createTime)
+    </select>
+</mapper>

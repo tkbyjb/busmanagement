@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.busmanagement.mapper.BusMapper">
+    <select id="selects" resultMap="busInfo" parameterType="java.util.Map">
+        select t.*,t_user.userName creatorUserName
+        from (select t_bus.*,t_user.userName principalUserName from t_bus left join t_user on t_bus.principal = t_user.userId) t
+        left join t_user on t.creator = t_user.userId
+        where t.deleteFlag=0
+        <if test="searchMap.busId != null and searchMap.busId != 0">
+            and t.busId=#{searchMap.busId}
+        </if>
+        <if test="searchMap.busName != null and searchMap.busName != ''">
+            and t.busName like concat('%', #{searchMap.busName}, '%')
+        </if>
+        <if test="searchMap.busCode != null and searchMap.busCode != ''">
+            and t.busCode like concat('%', #{searchMap.busCode}, '%')
+        </if>
+        <if test="searchMap.engine != null and searchMap.engine != ''">
+            and t.engine=#{searchMap.engine}
+        </if>
+        <if test="searchMap.chassis != null and searchMap.chassis != ''">
+            and t.chassis=#{searchMap.chassis}
+        </if>
+        <if test="searchMap.instrumentNumber != null and searchMap.instrumentNumber != ''">
+            and t.instrumentNumber=#{searchMap.instrumentNumber}
+        </if>
+        <if test="searchMap.principal != null and searchMap.principal != 0">
+            and t.principal=#{searchMap.principal}
+        </if>
+        <if test="searchMap.vendor != null and searchMap.vendor != ''">
+            and t.vendor  like concat('%', #{searchMap.vendor}, '%')
+        </if>
+        <if test="searchMap.pakingPlace != null and searchMap.pakingPlace != ''">
+            and t.pakingPlace like concat('%', #{searchMap.pakingPlace}, '%')
+        </if>
+        <if test="searchMap.displace != null and searchMap.displace != ''">
+            and t.displace=#{searchMap.displace}
+        </if>
+        <if test="searchMap.model != null and searchMap.model != ''">
+            and t.model=#{searchMap.model}
+        </if>
+        <if test="searchMap.type != null and searchMap.type != ''">
+            and t.type=#{searchMap.type}
+        </if>
+        <if test="searchMap.purpose != null and searchMap.purpose != ''">
+            and t.purpose  like concat('%', #{searchMap.purpose}, '%')
+        </if>
+        <if test="searchMap.purchaseDate != null and searchMap.purchaseDate != ''">
+            and t.purchaseDate=#{searchMap.purchaseDate}
+        </if>
+        <if test="searchMap.createTime != null and searchMap.createTime != ''">
+            and t.createTime=#{searchMap.createTime}
+        </if>
+        <if test="searchMap.updateTime != null and searchMap.updateTime != ''">
+            and t.updateTime=#{searchMap.updateTime}
+        </if>
+          <!--自定义查询-->
+        <if test="searchMap.principalUserName != null and searchMap.principalUserName != ''">
+            and t.principalUserName   like concat('%', #{searchMap.principalUserName}, '%')
+        </if>
+          <!--购置时间段-->
+        <if test="searchMap.startPurchaseDate != null and searchMap.endPurchaseDate != null and searchMap.startPurchaseDate != '' and searchMap.endPurchaseDate != ''">
+            and t.purchaseDate between #{searchMap.startPurchaseDate} and #{searchMap.endPurchaseDate}
+        </if>
+        <if test="searchMap.orderBy != null and searchMap.upDown != null">
+            order by
+            <if test="searchMap.orderBy == 'createTime'">
+                t.createtime
+            </if>
+            <if test="searchMap.orderBy == 'updateTime'">
+                t.updateTime
+            </if>
+            <if test="searchMap.orderBy == 'purchaseDate'">
+                t.purchaseDate
+            </if>
+            <if test="searchMap.upDown == 'desc'">
+                desc
+            </if>
+            <if test="searchMap.upDown == 'asc'">
+                asc
+            </if>
+        </if>
+    </select>
+    <resultMap id="busInfo" type="com.busmanagement.bean.Bus" autoMapping="true">
+        <id property="busId" column="busId"/>
+        <result property="principal" column="principal"/>
+        <result property="creator" column="creator"/>
+        <association property="principalUser" javaType="com.busmanagement.bean.User">
+            <id property="userId" column="principal"/>
+            <result property="userName" column="principalUserName"/>
+        </association>
+        <association property="creatorUser" javaType="com.busmanagement.bean.User">
+            <id property="userId" column="creator"/>
+            <result property="userName" column="creatorUserName"/>
+        </association>
+    </resultMap>
+
+    <select id="selectPrincipalUserNames" resultType="java.lang.String">
+        select distinct t_user.userName from t_user join t_bus on t_user.userId=t_bus.principal where t_bus.deleteFlag=0
+    </select>
+
+    <select id="selectVendors" resultType="java.lang.String">
+        select distinct vendor from t_bus where deleteFlag=0
+    </select>
+
+    <select id="selectTypes" resultType="java.lang.String">
+        select distinct t_bus.type from t_bus where deleteFlag=0
+    </select>
+
+    <select id="selectPurposes" resultType="java.lang.String">
+        select distinct purpose from t_bus where deleteFlag=0
+    </select>
+
+    <select id="selectPakingPlaces" resultType="java.lang.String">
+        select distinct pakingPlace from t_bus where deleteFlag=0
+    </select>
+
+    <update id="deletes" parameterType="java.util.ArrayList" flushCache="true">
+        update t_bus set deleteFlag=1 where busId in 
+        <foreach collection="busIds" item="id" index="index" separator="," open="(" close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <insert id="insert" parameterType="com.busmanagement.bean.Bus">
+        insert into t_bus
+        (busName,busCode,engine,chassis,instrumentNumber,principal,vendor,pakingPlace,displace,model,type,purpose,purchaseDate,photo,createTime,updateTime,creator,deleteFlag)
+        values
+        (#{bus.busName},#{bus.busCode},#{bus.engine},#{bus.chassis},#{bus.instrumentNumber},
+         #{bus.principal},#{bus.vendor},#{bus.pakingPlace},#{bus.displace},#{bus.model},#{bus.type},
+         #{bus.purpose},#{bus.purchaseDate},#{bus.photo},#{bus.createTime},#{bus.updateTime},#{bus.creator},#{bus.deleteFlag})
+    </insert>
+
+    <update id="update" parameterType="com.busmanagement.bean.Bus">
+        update t_bus set
+         busName=#{bus.busName},
+         busCode=#{bus.busCode},
+         engine=#{bus.engine},
+         chassis=#{bus.chassis},
+         instrumentNumber=#{bus.instrumentNumber},
+         principal=#{bus.principal},
+         vendor=#{bus.vendor},
+         pakingPlace=#{bus.pakingPlace},
+         displace=#{bus.displace},
+         model=#{bus.model},
+         type=#{bus.type},
+         purpose=#{bus.purpose},
+         purchaseDate=#{bus.purchaseDate},
+         photo=#{bus.photo},
+         createTime=#{bus.createTime},
+         updateTime=#{bus.updateTime},
+         creator=#{bus.creator},
+         deleteFlag=#{bus.deleteFlag}
+         where busId=#{bus.busId}
+    </update>
+
+    <select id="selectPhotos" resultType="java.lang.String">
+        select distinct photo from t_bus where deleteFlag=0
+    </select>
+
+</mapper>
